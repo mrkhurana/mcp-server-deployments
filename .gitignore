@@ -40,3 +40,4 @@ build/
 # Temporary files
 *.tmp
 *.bak
+.terraform/
