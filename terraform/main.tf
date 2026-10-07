@@ -40,3 +40,25 @@ resource "aws_ecr_lifecycle_policy" "default" {
     ]
   })
 }
+
+# Private copy of the workshop's nginx image: EKS nodes have no internet route, so they pull from ECR.
+resource "aws_ecr_repository" "workload" {
+  name                 = var.workload_repository_name
+  image_tag_mutability = var.image_tag_mutability
+
+  image_scanning_configuration {
+    scan_on_push = var.scan_images_on_push
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  force_delete = var.force_delete
+
+  tags = {
+    Name        = var.workload_repository_name
+    Project     = "aiops-mcp"
+    Environment = "workshop"
+  }
+}

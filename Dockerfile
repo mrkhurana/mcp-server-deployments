@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# Docker Official Image via ECR Public, which avoids Docker Hub's anonymous pull rate limit.
+FROM public.ecr.aws/docker/library/python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

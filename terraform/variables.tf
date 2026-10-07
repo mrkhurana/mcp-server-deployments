@@ -10,6 +10,12 @@ variable "repository_name" {
   default     = "mcp-server"
 }
 
+variable "workload_repository_name" {
+  description = "ECR repository holding the mirrored nginx image used by the EKS workload."
+  type        = string
+  default     = "nginx"
+}
+
 variable "image_tag_mutability" {
   description = "Whether image tags can be overwritten."
   type        = string

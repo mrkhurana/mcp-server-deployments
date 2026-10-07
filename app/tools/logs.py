@@ -1,31 +1,41 @@
 from typing import Any
 
-from kubernetes import client
+from ..config import validate_name, validate_namespace, validate_positive_int
+from ..kubernetes_client import core_api
+from .common import k8s_tool
 
-from ..config import settings, validate_namespace, validate_positive_int
-from ..kubernetes_client import get_api_client
+MAX_TAIL_LINES = 500
 
 
-def get_pod_logs(namespace: str, pod_name: str, container_name: str, tail_lines: int | str) -> dict[str, Any]:
+@k8s_tool
+def get_pod_logs(
+    namespace: str,
+    pod_name: str,
+    container_name: str | None = None,
+    tail_lines: int = 100,
+    previous: bool = False,
+) -> dict[str, Any]:
+    """Return the last log lines of a pod's container (default: its first container, 100 lines, max 500).
+    Set previous=true to read the logs of the previous, crashed instance of a restarting container
+    (the key evidence for CrashLoopBackOff)."""
     ns = validate_namespace(namespace)
-    if not pod_name or not pod_name.strip():
-        raise ValueError("pod_name is required")
-    if not container_name or not container_name.strip():
-        raise ValueError("container_name is required")
-    tail = validate_positive_int(tail_lines, "tail_lines")
+    name = validate_name(pod_name, "pod_name")
+    tail = validate_positive_int(tail_lines, "tail_lines", maximum=MAX_TAIL_LINES)
+    core = core_api()
 
-    api = client.CoreV1Api(api_client=get_api_client())
-    logs = api.read_namespaced_pod_log(
-        name=pod_name,
-        namespace=ns,
-        container=container_name,
-        tail_lines=tail,
+    container = validate_name(container_name, "container_name") if container_name else None
+    if container is None:
+        pod = core.read_namespaced_pod(name=name, namespace=ns)
+        container = pod.spec.containers[0].name
+
+    logs = core.read_namespaced_pod_log(
+        name=name, namespace=ns, container=container, tail_lines=tail, previous=previous
     )
-
     return {
         "namespace": ns,
-        "pod_name": pod_name,
-        "container_name": container_name,
+        "pod_name": name,
+        "container_name": container,
+        "previous": previous,
         "tail_lines": tail,
         "logs": logs,
     }
